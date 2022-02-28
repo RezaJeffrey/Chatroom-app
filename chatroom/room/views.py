@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, HttpResponse
 from .models import Room, Message
 from django.views import View
-from .forms import CreateRoomForm
+from .forms import CreateRoomForm, CreatePrivateRoomForm, RoomAuthForm, SendMessageForm
 from django.contrib import messages
 from django.utils.text import slugify
 
@@ -12,6 +12,11 @@ class HomeView(View):
         return render(request, 'room/home.html', {'rooms': rooms})
 
 
+class RoomTypeView(View):
+    def get(self, request):
+        return render(request, 'room/room_choose.html')
+
+
 class CreateRoomView(View):
     form_class = CreateRoomForm
     template_name = 'room/create_room.html'
@@ -19,8 +24,7 @@ class CreateRoomView(View):
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             messages.error(request, 'login first', 'warning')
-            # TODO redirect to login page after adding the feature
-            return redirect('room:home')
+            return redirect('account:signin')
         return super().dispatch(request, *args, **kwargs)
 
     def get(self, request):
@@ -34,19 +38,100 @@ class CreateRoomView(View):
             room = Room.objects.filter(room_name=cd['room_name'])
             if not room.exists():
                 new_room_slug = slugify(cd['room_name'][:25], allow_unicode=True)
-                Room.objects.create(room_name=cd['room_name'], slug=new_room_slug)
+                room = Room(room_name=cd['room_name'], slug=new_room_slug)
+                room.save()
                 messages.success(request, 'room created', 'success')
                 return redirect('room:home')
             messages.error(request, 'This room is already exists', 'warning')
         return render(request, self.template_name, {'form': form})
 
 
+class CreatePrivateRoomView(View):
+    form_class = CreatePrivateRoomForm
+    template_name = 'room/create_room.html'
+
+
+    def get(self, request):
+        form = self.form_class
+        return render(request, self.template_name, {'form': form})
+
+    def post(self, request):
+        form = self.form_class(request.POST)
+        if form.is_valid():
+            cd = form.cleaned_data
+            room = Room.objects.filter(room_name=cd['room_name'])
+            if room:
+                messages.error(request, 'a room with this name is already exists', 'danger')
+                return render(request, self.template_name, {'form': form})
+            privateroom_slug = slugify(cd['room_name'][:25], allow_unicode=True)
+            privateroom = Room(room_name=cd['room_name'], slug=privateroom_slug)
+            privateroom.set_is_private(True)
+            privateroom.set_password(cd['password'])
+            privateroom.save()
+            messages.success(request, f"Room {cd['room_name']} created", 'success')
+            return redirect('room:room_inside', privateroom.id, privateroom.slug)
+        messages.error(request, 'not valid', 'danger')
+        return render(request, self.template_name, {'form': form})
+
+
 class RoomInsideView(View):
+    template_name = 'room/room_inside.html'
+    form_class = SendMessageForm
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            messages.error(request, 'login first', 'danger')
+            return redirect('account:signin')
+        return super().dispatch(request, *args, **kwargs)
+
+    def setup(self, request, *args, **kwargs):
+        self.room = Room.objects.get(id=kwargs['room_id'])
+        self.all_messages = Message.objects.filter(room=self.room)
+        return super().setup(request, *args, **kwargs)
+
     def get(self, request, room_id, room_slug):
-        return HttpResponse(f"<h1>its room {room_slug} </h1>")
+        self.room = Room.objects.get(id=room_id)
+        if self.room.is_private:
+            return redirect('room:private_room_auth', self.room.id)
+        form = self.form_class()
+        context =  {
+                    'room': self.room,
+                    'form': form,
+                    'message': self.all_messages,
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request, room_id, room_slug):
+        form = self.form_class(request.POST)
+        if form.is_valid():
+            print(self.room)
+            new_msg = Message(body=form.cleaned_data['body'])
+            new_msg.user = request.user  # TODO create a dispatch func to make sure user is logged in
+            new_msg.room = self.room
+            new_msg.save()
+            return redirect('room:room_inside', room_id, room_slug)
+        else:
+            messages.error(request, 'form not valid', 'warning')
+        return render(request, self.template_name, {'form': form, 'message': self.all_messages})
 
 
+class RoomAuthView(View):
+    template_name = 'room/room_auth.html'
+    form_class = RoomAuthForm
 
+    def get(self, request, room_id):
+        form = self.form_class()
+        return render(request, self.template_name, {'form': form})
 
-
+    def post(self, request, room_id):
+        form = self.form_class(request.POST)
+        if form.is_valid():
+            room = Room.objects.get(id=room_id)
+            if form.cleaned_data['password'] == room.password:
+                messages.success(request, f'successfully entered room {room.room_name}', 'success')
+                return redirect('room:room_inside', room.id, room.slug)
+            messages.error(request, 'wrong password', 'danger')
+            return render(request, self.template_name, {'form': form})
+        messages.error(request, 'Not valid form', 'danger')
+        return render(request, self.template_name, {'form': form})
 

@@ -1,8 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import PermissionsMixin, BaseUserManager, AbstractBaseUser
 
-# TODO I deleted the request.user.is_authed in templates navbar make sure to redo it with new user
-
 
 class CustomAccountManager(BaseUserManager):
     def create_user(self, username, email, password):
@@ -24,7 +22,7 @@ class CustomAccountManager(BaseUserManager):
         return user
 
 
-class MyUser(PermissionsMixin, AbstractBaseUser):
+class User(PermissionsMixin, AbstractBaseUser):
     ROLES = (
              ('admin', 'Admin'),
              ('guest', 'Guest'),
@@ -32,11 +30,12 @@ class MyUser(PermissionsMixin, AbstractBaseUser):
     username = models.CharField(max_length=50, unique=True)
     first_name = models.CharField(max_length=50, blank=True)
     last_name = models.CharField(max_length=50, blank=True)
-    email = models.CharField(max_length=50, unique=True)
+    email = models.EmailField(max_length=50, unique=True)
     bio = models.TextField(max_length=1000, blank=True)
     role = models.CharField(max_length=50, choices=ROLES, default='guest')
-    signup_date = models.DateTimeField(auto_now_add=True)
+    date_joined = models.DateTimeField(auto_now_add=True)
     is_superuser = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     objects = CustomAccountManager()
 
