@@ -1,0 +1,18 @@
+{% extends 'main.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block body %}
+
+    <h1> Home page </h1>
+    <hr>
+    {% for room in rooms %}
+        {% if room.is_private  %}
+            <a href="{% url 'room:room_inside' room.id room.slug %}">{{ room.room_name }}(Private)</a><br><br>
+        {% else %}
+            <a href="{% url 'room:room_inside' room.id room.slug %}">{{ room.room_name }}</a><br><br>
+        {% endif %}
+
+    {% endfor %}
+
+{% endblock %}

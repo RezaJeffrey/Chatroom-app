@@ -106,7 +106,7 @@ class RoomInsideView(View):
         if form.is_valid():
             print(self.room)
             new_msg = Message(body=form.cleaned_data['body'])
-            new_msg.user = request.user  # TODO create a dispatch func to make sure user is logged in
+            new_msg.user = request.user
             new_msg.room = self.room
             new_msg.save()
             return redirect('room:room_inside', room_id, room_slug)

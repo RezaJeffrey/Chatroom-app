@@ -1,0 +1,37 @@
+{% extends 'main.html' %}
+
+{% block title %}{{ room.room_name }} {% endblock %}
+
+{% block body %}
+
+    {% for msg in message %}
+        {% if msg.user.id == request.user.id %}
+            <div class="card" style="color: crimson">
+                <p class="card-header">{{ msg.user.username }}| {{ msg.posted }} </p>
+                <p class="card-body">{{ msg.body }} </p>
+            </div><br>
+        {% else %}
+            <div class="card">
+                <p class="card-header">{{ msg.user.username }}| {{ msg.posted }} </p>
+                <p class="card-body">{{ msg.body }} </p>
+            </div><br>
+        {% endif %}
+    {% endfor %}
+    <form method="post" action="" novalidate>
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        {{ form.body.errors }}
+        {{ form.body }}
+        <input type="submit" value="Send" class="btn btn-primary">
+    </form>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
