@@ -2,6 +2,7 @@ from django.db import models
 from account.models import User
 from django.urls import reverse
 from django.contrib.auth.hashers import make_password
+from django.template.defaultfilters import truncatechars
 
 
 class Room(models.Model):
@@ -37,8 +38,8 @@ class Membership(models.Model):
 
     def __str__(self):
         if self.room.is_private:
-            return f'{self.user} joined {self.room}(private)'
-        return f'{self.user} joined {self.room}'
+            return f'{self.user}    ---joined-->    {self.room}-(private)'
+        return f'{self.user}    ---joined-->    {self.room}'
 
 
 class Message(models.Model):
@@ -46,6 +47,10 @@ class Message(models.Model):
     body = models.CharField(max_length=200, null=True, blank=True)
     room = models.ForeignKey(Room, on_delete=models.CASCADE, blank=True, null=True)
     posted = models.TimeField(auto_now_add=True)
+
+    @property
+    def short_body(self):
+        return truncatechars(self.body, 35)
 
     def __str__(self):
         return self.body
