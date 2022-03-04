@@ -36,7 +36,9 @@ class Membership(models.Model):
         unique_together = [['room', 'user']]
 
     def __str__(self):
-        return f'{self.user} joined {self.room} '
+        if self.room.is_private:
+            return f'{self.user} joined {self.room}(private)'
+        return f'{self.user} joined {self.room}'
 
 
 class Message(models.Model):

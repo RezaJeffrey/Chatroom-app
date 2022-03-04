@@ -9,7 +9,7 @@ urlpatterns = [
     path('create-private-room/', views.CreatePrivateRoomView.as_view(), name='create_private_room'),
     path('<int:room_id>/<slug:room_slug>/', views.RoomInsideView.as_view(), name='room_inside'),
     path('<int:room_id>/', views.JoinRoomView.as_view(), name='join_room'),
-    path('#', views.PrivateRoomInsideView.as_view(), name='private_room_inside'),
+    path('private/<int:room_id>/<slug:room_slug>/', views.PrivateRoomInsideView.as_view(), name='private_room_inside'),
 
 ]
 
