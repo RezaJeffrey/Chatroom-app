@@ -1,0 +1,33 @@
+{% extends 'main.html' %}
+
+{% block title %}Room Join{% endblock %}
+
+{% block body %}
+
+    {% if room.is_private %}
+
+        <form action="" method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <input type="submit" value="Join" class="btn btn-primary">
+        </form>
+
+    {% else %}
+        <form action="" method="post">
+            {% csrf_token %}
+            <input type="submit" value="Join" class="btn btn-primary">
+        </form>
+    {% endif %}
+
+
+{% endblock %}
+
+
+
+
+
+
+
+
+
+

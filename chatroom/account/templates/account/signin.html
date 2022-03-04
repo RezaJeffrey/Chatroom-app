@@ -1,0 +1,13 @@
+{% extends 'main.html' %}
+
+{% block title %}Login{% endblock %}
+
+{% block body %}
+
+    <form method="post" action="">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" value="Login" class="btn btn-primary">
+    </form><br>
+    <a class="nav-link" href="{% url 'account:signup' %}">Don't have account? create one</a>
+{% endblock %}
