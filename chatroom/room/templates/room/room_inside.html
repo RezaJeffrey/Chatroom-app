@@ -3,7 +3,7 @@
 {% block title %}{{ room.room_name }} {% endblock %}
 
 {% block body %}
-
+    <a href="#"><h1> {{ room.room_name }} </h1></a>  <!-- TODO room:room_profile -->
     {% for msg in message %}
         {% if msg.user.id == request.user.id %}
             <div class="card" style="color: crimson">

@@ -4,7 +4,8 @@ from django.views import View
 from .forms import CreateRoomForm, CreatePrivateRoomForm, RoomAuthForm, SendMessageForm
 from django.contrib import messages
 from django.utils.text import slugify
-
+from django.contrib.auth.hashers import check_password
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 class HomeView(View):
     def get(self, request):
@@ -90,16 +91,20 @@ class RoomInsideView(View):
         return super().setup(request, *args, **kwargs)
 
     def get(self, request, room_id, room_slug):
-        self.room = Room.objects.get(id=room_id)
-        if self.room.is_private:
-            return redirect('room:private_room_auth', self.room.id)
-        form = self.form_class()
-        context =  {
-                    'room': self.room,
-                    'form': form,
-                    'message': self.all_messages,
-        }
-        return render(request, self.template_name, context)
+        if request.user.room_set.filter(id=room_id).exists():
+            self.room = Room.objects.get(id=room_id)
+            # if self.room.is_private:
+            #     return redirect('room:private_room_auth', self.room.id)
+            form = self.form_class()
+            context =  {
+                        'room': self.room,
+                        'form': form,
+                        'message': self.all_messages,
+            }
+
+            return render(request, self.template_name, context)
+        messages.error(request, 'Join the room first', 'warning')
+        return redirect('room:join_room', room_id)
 
     def post(self, request, room_id, room_slug):
         form = self.form_class(request.POST)
@@ -115,23 +120,134 @@ class RoomInsideView(View):
         return render(request, self.template_name, {'form': form, 'message': self.all_messages})
 
 
-class RoomAuthView(View):
-    template_name = 'room/room_auth.html'
-    form_class = RoomAuthForm
+class JoinRoomView(LoginRequiredMixin, View):
+    template_name = 'room/join_room.html'
 
     def get(self, request, room_id):
-        form = self.form_class()
-        return render(request, self.template_name, {'form': form})
+        return render(request, self.template_name)
 
     def post(self, request, room_id):
+        new_room = Room.objects.get(id=room_id)
+        request.user.room_set.add(new_room)
+        messages.success(request, "Joined ...", 'success')
+        return redirect('room:room_inside', room_id, new_room.slug)
+
+
+class PrivateRoomInsideView(View):
+    template_name = 'room/room_inside.html'
+    form_class = SendMessageForm
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            messages.error(request, 'login first', 'danger')
+            return redirect('account:signin')
+        return super().dispatch(request, *args, **kwargs)
+
+    def setup(self, request, *args, **kwargs):
+        self.room = Room.objects.get(id=kwargs['room_id'])
+        self.all_messages = Message.objects.filter(room=self.room)
+        return super().setup(request, *args, **kwargs)
+
+    def get(self, request, room_id, room_slug):
+        if request.user.room_set.filter(id=room_id).exists():
+            self.room = Room.objects.get(id=room_id)
+            # if self.room.is_private:
+            #     return redirect('room:private_room_auth', self.room.id)
+            form = self.form_class()
+            context =  {
+                        'room': self.room,
+                        'form': form,
+                        'message': self.all_messages,
+            }
+
+            return render(request, self.template_name, context)
+        messages.error(request, 'Join the room first', 'warning')
+        return redirect('room:join_room', room_id)
+
+    def post(self, request, room_id, room_slug):
         form = self.form_class(request.POST)
         if form.is_valid():
-            room = Room.objects.get(id=room_id)
-            if form.cleaned_data['password'] == room.password:
-                messages.success(request, f'successfully entered room {room.room_name}', 'success')
-                return redirect('room:room_inside', room.id, room.slug)
-            messages.error(request, 'wrong password', 'danger')
-            return render(request, self.template_name, {'form': form})
-        messages.error(request, 'Not valid form', 'danger')
-        return render(request, self.template_name, {'form': form})
+            print(self.room)
+            new_msg = Message(body=form.cleaned_data['body'])
+            new_msg.user = request.user
+            new_msg.room = self.room
+            new_msg.save()
+            return redirect('room:room_inside', room_id, room_slug)
+        else:
+            messages.error(request, 'form not valid', 'warning')
+        return render(request, self.template_name, {'form': form, 'message': self.all_messages})
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# class PrivateRoomInsideView(View):
+#     template_name = 'room/room_inside.html'
+#     form_class = SendMessageForm
+#
+#     def dispatch(self, request, *args, **kwargs):
+#         if not request.user.is_authenticated:
+#             messages.error(request, 'login first', 'danger')
+#             return redirect('account:signin')
+#         return super().dispatch(request, *args, **kwargs)
+#
+#     def setup(self, request, *args, **kwargs):
+#         self.room = Room.objects.get(id=kwargs['room_id'])
+#         self.all_messages = Message.objects.filter(room=self.room)
+#         return super().setup(request, *args, **kwargs)
+#
+#     def get(self, request, room_id, room_slug):
+#         form = self.form_class()
+#         new_auth = RoomAuthView(room_id)
+#         if check_password(self.room.password, new_auth.room_pass):
+#             messages.success(request, 'entered room successful', 'success')
+#             return render(request, self.template_name, {'form': form})
+#
+#
+#     def post(self, request, room_id, room_slug):
+#         form = self.form_class(request.POST)
+#         if form.is_valid():
+#             new_msg = Message(body=form.cleaned_data['body'])
+#             new_msg.user = request.user
+#             new_msg.room = self.room
+#             new_msg.save()
+#             return redirect('room:room_inside', room_id, room_slug)
+#         else:
+#             messages.error(request, 'form not valid', 'warning')
+#         return render(request, self.template_name, {'form': form, 'message': self.all_messages})
+
+
+# class RoomAuthView(View):
+#     auth_template = 'room/room_auth.html'
+#     auth_form = RoomAuthForm
+#
+#     def __init__(self, room_id=None):
+#         self.room_id = room_id
+#
+#     def setup(self, request, *args, **kwargs):
+#         self.room = Room.objects.get(id=self.room_id)
+#         return super().setup(request, *args, **kwargs)
+#
+#     def get(self, request):
+#         form = self.auth_form()
+#         return render(request, self.auth_template, {'form': form})
+#
+#     def post(self, request):
+#         form = self.auth_form(request.POST)
+#         if form.is_valid():
+#             self.room_pass = form.cleaned_data['password']
+#             return self.room_pass
+#         raise ValidationError
