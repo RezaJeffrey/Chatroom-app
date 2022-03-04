@@ -1,12 +1,12 @@
 from django.db import models
 from account.models import User
 from django.urls import reverse
+from django.contrib.auth.hashers import make_password
 
 
 class Room(models.Model):
-    # TODO backward relations
     room_name = models.CharField(max_length=60)
-    users = models.ManyToManyField(User)
+    members = models.ManyToManyField(User, through='Membership')
     created_date = models.DateField(auto_now_add=True)
     slug = models.SlugField(max_length=60)
     is_private = models.BooleanField(default=False)
@@ -23,8 +23,22 @@ class Room(models.Model):
         return self.is_private
 
     def set_password(self, value):
-        self.password = value
-        return self.is_private
+        self.password = make_password(value)
+        return self.password
+
+
+class Membership(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    room = models.ForeignKey(Room, on_delete=models.CASCADE)
+    is_admin = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = [['room', 'user']]
+
+    def __str__(self):
+        if self.room.is_private:
+            return f'{self.user} joined {self.room}(private)'
+        return f'{self.user} joined {self.room}'
 
 
 class Message(models.Model):
