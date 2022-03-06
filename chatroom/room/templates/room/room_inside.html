@@ -2,21 +2,56 @@
 
 {% block title %}{{ room.room_name }} {% endblock %}
 
+
+
 {% block body %}
     <a href="#"><h1> {{ room.room_name }} </h1></a>  <!-- TODO room:room_profile -->
+
     {% for msg in message %}
-        {% if msg.user.id == request.user.id %}
+
+        {% if msg.user.id == request.user.id and not req_is_admin %}
             <div class="card" style="color: crimson">
-                <p class="card-header">{{ msg.user.username }}| {{ msg.posted }} </p>
+                <p class="card-header">{{ msg.user.username }}| {{ msg.posted }}  -
+                    <a href="{% url 'room:delete_message' msg.id %}"><button class="btn btn-danger"> Delete </button></a>
+                    <a href="{% url 'room:edit_message' msg.id %}"><button class="btn btn-success"> Edit </button></a>
+                </p>
                 <p class="card-body">{{ msg.body }} </p>
             </div><br>
-        {% else %}
+
+        {% elif msg.user.id == request.user.id and req_is_admin %}
+            <div class="card" style="color: crimson">
+                <p class="card-header">{{ msg.user.username }}(Admin)| {{ msg.posted }}  -
+                    <a href="{% url 'room:delete_message' msg.id %}"><button class="btn btn-danger"> Delete </button></a>
+                    <a href="{% url 'room:edit_message' msg.id %}"><button class="btn btn-success"> Edit </button></a>
+
+                </p>
+                <p class="card-body">{{ msg.body }} </p>
+            </div><br>
+
+        {% elif msg.user.id != request.user.id and req_is_admin %}
             <div class="card">
-                <p class="card-header">{{ msg.user.username }}| {{ msg.posted }} </p>
+                <p class="card-header">{{ msg.user.username }}| {{ msg.posted }} -
+                    <a href="{% url 'room:delete_message' msg.id %}"><button class="btn btn-danger"> Delete </button></a>
+                </p>
                 <p class="card-body">{{ msg.body }} </p>
             </div><br>
+
+        {% elif msg.user.id != request.user.id and not req_is_admin %}
+            <div class="card">
+                <p class="card-header">{{ msg.user.username }}| {{ msg.posted }}</p>
+                <p class="card-body">{{ msg.body }} </p>
+            </div><br>
+
+
+ <!-- TODO ask mehran to fix this -->
+
         {% endif %}
+
+
     {% endfor %}
+
+
+
     <form method="post" action="" novalidate>
         {% csrf_token %}
         {{ form.non_field_errors }}
