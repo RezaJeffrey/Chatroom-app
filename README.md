@@ -29,7 +29,7 @@ python manage.py createsuperuser
 ```
 
 Here's a Gif to see how the app is working:
-<div style="width:480px;max-width:100%;">
-  <p><img align="left" alt="gif" src="https://github.com/RezaJeffrey/Chatroom-app/blob/master/67pvve.gif" width="360" height="203"  frameBorder="0" /></p>
+<div style="width:720px;max-width:100%;">
+  <p><img align="left" alt="gif" src="https://github.com/RezaJeffrey/Chatroom-app/blob/master/67pvve.gif" width="400" height="235"  frameBorder="0" /></p>
   </div>
   
