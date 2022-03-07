@@ -41,6 +41,10 @@ class CreateRoomView(View):
                 new_room_slug = slugify(cd['room_name'][:25], allow_unicode=True)
                 room = Room(room_name=cd['room_name'], slug=new_room_slug)
                 room.save()
+                request.user.room_set.add(room)
+                new = request.user.membership_set.get(room=room)
+                new.set_is_admin(True)
+                new.save()
                 messages.success(request, 'room created', 'success')
                 return redirect('room:home')
             messages.error(request, 'This room is already exists', 'warning')
@@ -69,6 +73,10 @@ class CreatePrivateRoomView(View):
             privateroom.set_is_private(True)
             privateroom.set_password(cd['password'])
             privateroom.save()
+            request.user.room_set.add(privateroom)
+            new = request.user.membership_set.get(room=privateroom)
+            new.set_is_admin(True)
+            new.save()
             messages.success(request, f"Room {cd['room_name']} created", 'success')
             return redirect('room:room_inside', privateroom.id, privateroom.slug)
         messages.error(request, 'not valid', 'danger')
@@ -93,13 +101,13 @@ class RoomInsideView(View):
     def get(self, request, room_id, room_slug):
         if request.user.room_set.filter(id=room_id).exists():
             self.room = Room.objects.get(id=room_id)
-            # if self.room.is_private:
-            #     return redirect('room:private_room_auth', self.room.id)
             form = self.form_class()
+            req_is_admin = request.user.membership_set.get(room=self.room).is_admin
             context =  {
                         'room': self.room,
                         'form': form,
                         'message': self.all_messages,
+                        'req_is_admin': req_is_admin,
             }
 
             return render(request, self.template_name, context)
@@ -170,10 +178,12 @@ class PrivateRoomInsideView(View):
         if request.user.room_set.filter(id=room_id).exists():
             self.room = Room.objects.get(id=room_id)
             form = self.form_class()
+            req_is_admin = request.user.membership_set.get(room=self.room).is_admin
             context =  {
                         'room': self.room,
                         'form': form,
                         'message': self.all_messages,
+                        'req_is_admin': req_is_admin,
             }
 
             return render(request, self.template_name, context)
@@ -192,5 +202,57 @@ class PrivateRoomInsideView(View):
         else:
             messages.error(request, 'form not valid', 'warning')
         return render(request, self.template_name, {'form': form, 'message': self.all_messages})
+
+
+class DeleteMessageView(LoginRequiredMixin, View):
+    def get(self, request, message_id):
+        message = Message.objects.get(id=message_id)
+        message_room = message.room
+        room_slug = message_room.slug
+        if message.user.id == request.user.id or request.user.membership_set.get(room=message_room).is_admin:
+            message.delete()
+            messages.success(request, 'deleted successfully', 'success')
+            if message_room.is_private:
+                return redirect('room:private_room_inside', message_room.id, room_slug)
+            return redirect('room:room_inside', message_room.id, room_slug)
+        messages.error(request, 'this is not your message or your not admin', 'danger')
+        if message_room.is_private:
+            return redirect('room:private_room_inside', message_room.id, room_slug)
+        return redirect('room:room_inside', message_room.id, room_slug)
+
+
+class EditMessageView(LoginRequiredMixin, View):
+    form_class = SendMessageForm
+
+    def setup(self, request, *args, **kwargs):  # for performance. no need to query data base 3 times
+        self.message_instance = Message.objects.get(id=kwargs['message_id'])
+        return super().setup(request, *args, **kwargs)
+
+    def dispatch(self, request, *args, **kwargs):
+        message = self.message_instance
+        if request.user.id != message.user.id:
+            messages.error(request, 'you cant edit others posts', 'danger')
+            return redirect('room:home')
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, message_id):
+        message = self.message_instance
+        all_messages = Message.objects.filter(room=message.room)
+        form = self.form_class(instance=message)
+        return render(request, 'room/room_inside.html', {'form': form, 'room': message.room, 'message': all_messages})
+
+
+    def post(self, request, message_id):
+        message = self.message_instance
+        form = self.form_class(request.POST, instance=message)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'edited', 'success')
+            if message.room.is_private:
+                return redirect('room:private_room_inside', message.room.id, message.room.slug)
+            return redirect('room:room_inside', message.room.id, message.room.slug)
+
+
+
 
 

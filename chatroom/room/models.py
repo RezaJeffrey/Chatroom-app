@@ -41,6 +41,10 @@ class Membership(models.Model):
             return f'{self.user}    ---joined-->    {self.room}-(private)'
         return f'{self.user}    ---joined-->    {self.room}'
 
+    def set_is_admin(self, value):
+        self.is_admin = value
+        return self.is_admin
+
 
 class Message(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
