@@ -261,4 +261,11 @@ def ws_index(request):
 
 
 def ws_room(request, room_name):
-    return render(request, "room/ws-room.html", {"room_name": room_name})
+    room = Room.objects.filter(room_name=room_name)
+    user = request.user.username
+    context = {
+        "room_name": room_name,
+        "room": room,
+        "username": user
+    }
+    return render(request, "room/ws-room.html", context=context)

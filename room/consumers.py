@@ -4,29 +4,27 @@ from channels.generic.websocket import WebsocketConsumer
 from room.models import Message, Room
 from django.contrib.auth import get_user_model
 
-
 User = get_user_model()
 
 
 class ChatConsumer(WebsocketConsumer):
 
     def fetch_messages(self, data):
-        messages = Message.objects.all().order_by('-timestamp')[:20]  # todo use room_name to filter messages
+        messages = Message.objects.all().order_by('-id')[:20]  # todo use room_name to filter messages
         context = {
             "messages": self.messages_to_json(messages)
         }
         self.load_messages_to_group(context)
 
-
     def new_message(self, data):
         user = data['sender']
         room_name = data['room']
         message_user = User.objects.filter(username=user).first()
-        chat_room = Room.objects.filter(room__room_name=room_name).first()
-        message = Message.objects.create(user=message_user, body=data['message_body'], room=chat_room)
+        chat_room = Room.objects.filter(room_name=room_name).first()
+        message = Message.objects.create(user=message_user, body=data['message'], room=chat_room)
         content = {
             "method": "new_message",
-            "message_body": self.message_to_json(message)
+            "message": self.message_to_json(message)
         }
         self.send_chat_message(content)
 
@@ -77,7 +75,6 @@ class ChatConsumer(WebsocketConsumer):
                 "message": message
             }
         )
-
 
     def load_messages_to_group(self, messages):
         self.send(text_data=json.dumps(messages))
