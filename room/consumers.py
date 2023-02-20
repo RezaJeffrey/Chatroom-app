@@ -10,9 +10,11 @@ User = get_user_model()
 class ChatConsumer(WebsocketConsumer):
 
     def fetch_messages(self, data):
-        messages = Message.objects.all().order_by('-id')[:20]  # todo use room_name to filter messages
+        room_name = data['room']
+        messages = Message.objects.filter(room__room_name=room_name)
         context = {
-            "messages": self.messages_to_json(messages)
+            "messages": self.messages_to_json(messages),
+            "method": "fetch_messages"
         }
         self.load_messages_to_group(context)
 
@@ -67,12 +69,13 @@ class ChatConsumer(WebsocketConsumer):
         self.methods[data['method']](self, data)
         # message = text_data_json["message"]
 
-    def send_chat_message(self, message):
+    def send_chat_message(self, content):
         # Send message to room group
         async_to_sync(self.channel_layer.group_send)(
             self.room_group_name, {
                 "type": "chat_message",
-                "message": message
+                "message": content['message'],
+                "method": content['method']
             }
         )
 
@@ -82,6 +85,9 @@ class ChatConsumer(WebsocketConsumer):
     # Receive message from room group
     def chat_message(self, event):
         message = event["message"]
+        method = event["method"]
 
         # Send message to WebSocket
-        self.send(text_data=json.dumps({"message": message}))
+        self.send(text_data=json.dumps({
+            "message": message,
+            "method": method}))
