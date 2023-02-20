@@ -1,5 +1,5 @@
 # Chatroom-app #Django
-Note: this project is being updated.
+Note: this project is being updated. Check feature/websockets branch in order to see the new changes.
 
 simple chatroom where you can create or enter a room and chat with others .
 user can create private or normal room . for private room you should add a password so each user who want to join the room should enter a password.
