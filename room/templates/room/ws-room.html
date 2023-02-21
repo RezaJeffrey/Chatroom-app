@@ -32,13 +32,14 @@
 
         chatSocket.onmessage = function(e) {
             const data = JSON.parse(e.data);
+            console.log(data)
             if(data['method'] === 'fetch_messages')
             {
                 for(let i=0; i<data['messages'].length; i++){
-                    document.querySelector('#chat-log').value += (data.messages[i]['body'] + '\n');
+                    document.querySelector('#chat-log').value += (data.messages[i]['username'] + ": " + data.messages[i]['body'] + '\n');
                 }
             } else if (data['method'] === 'new_message') {
-                document.querySelector('#chat-log').value += (data.message['body'] + '\n');
+                document.querySelector('#chat-log').value += (data.message['username']+ ": " + data.message['body'] + '\n');
             }
 
         };
