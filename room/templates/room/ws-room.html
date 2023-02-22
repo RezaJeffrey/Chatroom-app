@@ -1,81 +1,129 @@
-<!-- chat/templates/chat/room.html -->
+{% extends 'main.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8"/>
-    <title>Chat Room</title>
-</head>
-<body>
-    <textarea id="chat-log" cols="100" rows="20"></textarea><br>
-    <input id="chat-message-input" type="text" size="100"><br>
-    <input id="chat-message-submit" type="button" value="Send">
+{% block body %}
+{#    <textarea id="chat-log" cols="100" rows="20"></textarea><br>#}
+{#    <input id="chat-message-input" type="text" size="100"><br>#}
+{#    <input id="chat-message-submit" type="button" value="Send">#}
     {{ room_name|json_script:"room-name" }}
     {{ username|json_script:"message-sender" }}
+    <div id="room-div" class="alert alert-primary">
+        <div id="messages"></div>
+        <input id="send-message-input" type="text" name="body" class="form-control" placeholder="Send" maxlength="200" >
+        <input id="submit-message-btn" type="submit" value="Send" class="btn btn-primary">
+    </div>
+
+
 
     <script src="{% static "reconnecting-websockets.js" %}"></script>
-    <script>
-        const roomName = JSON.parse(document.getElementById('room-name').textContent);
-        const messageSender = JSON.parse(document.getElementById('message-sender').textContent);  // message user
-        const chatSocket = new ReconnectingWebSocket(
-            'ws://'
-            + window.location.host
-            + '/ws/chat/'
-            + roomName
-            + '/'
-        );
+    <div id="container">
+        <script>
+            const roomName = JSON.parse(document.getElementById('room-name').textContent);
+            const messageSender = JSON.parse(document.getElementById('message-sender').textContent);  // message user
+            const chatSocket = new ReconnectingWebSocket(
+                'ws://'
+                + window.location.host
+                + '/ws/chat/'
+                + roomName
+                + '/'
+            );
 
-        chatSocket.onopen = function(e)
-        {
-            fetchMessages();
-        }
-
-        chatSocket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
-            console.log(data)
-            if(data['method'] === 'fetch_messages')
+            chatSocket.onopen = function(e)
             {
-                for(let i=0; i<data['messages'].length; i++){
-                    document.querySelector('#chat-log').value += (data.messages[i]['username'] + ": " + data.messages[i]['body'] + '\n');
+                fetchMessages();
+            }
+
+            chatSocket.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                if(data['method'] === 'fetch_messages')
+                {
+                    for(let i=0; i<data['messages'].length; i++){
+                        craeteMessage(data.messages[i]);
+                    }
+                } else if (data['method'] === 'new_message') {
+                    craeteMessage(data.message);
                 }
-            } else if (data['method'] === 'new_message') {
-                document.querySelector('#chat-log').value += (data.message['username']+ ": " + data.message['body'] + '\n');
+
+            };
+
+            function craeteMessage(message)
+            {
+                var div= document.createElement("Div");
+                var outerDiv= document.createElement("Div");
+                var pTag = document.createElement("P");
+                var Br = document.createElement("br");
+                var pTagBody = document.createElement("P");
+                var aTagEdit = document.createElement("A");
+                var aTagDelete = document.createElement("A");
+                var buttonOne = document.createElement("Button");
+                var buttonTwo= document.createElement("Button");
+
+                div.className = "card";
+                if(messageSender === message['username'])
+                {
+                    div.style.color = "crimson";
+                }
+
+                outerDiv.className = "alert alert-primary";
+                pTag.className = "card-header";
+                pTag.style.whiteSpace = "pre";
+                pTag.innerHTML = message['username'] + "|" + message['posted_time'] + " ".repeat(18);
+                pTagBody.className = "card-body";
+                var msg_id = message['id'];
+                aTagDelete.href = "http://127.0.0.1:8000/delete_message/" + msg_id + "/"
+                aTagEdit.href = "http://127.0.0.1:8000/edit_message/" + msg_id + "/"
+                {#aTagDelete.href = "{% url 'room:delete_message' msg_id %}"#}
+                {#aTagEdit.href = "{% url 'room:edit_message' msg_id %}"#}
+                buttonOne.className = "btn btn-danger";
+                buttonOne.innerHTML = "Delete"
+                buttonTwo.className = "btn btn-success";
+                buttonTwo.innerHTML = "Edit"
+                pTagBody.innerHTML = message['body'];
+
+                aTagEdit.appendChild(buttonTwo);
+                aTagDelete.appendChild(buttonOne);
+                pTag.appendChild(aTagEdit);
+                pTag.appendChild(aTagDelete);
+                div.appendChild(pTag);
+                div.appendChild(pTagBody);
+                document.getElementById("messages").appendChild(div);
+                document.getElementById("messages").appendChild(Br);
             }
 
-        };
-
-        function fetchMessages()
-        {
-            chatSocket.send(JSON.stringify({
-                'method': "fetch_messages",
-                'room': roomName
-            }));
-        }
-
-        chatSocket.onclose = function(e) {
-            console.error('Chat socket closed unexpectedly');
-        };
-
-        document.querySelector('#chat-message-input').focus();
-        document.querySelector('#chat-message-input').onkeyup = function(e) {
-            if (e.keyCode === 13) {  // enter, return
-                document.querySelector('#chat-message-submit').click();
+            function fetchMessages()
+            {
+                chatSocket.send(JSON.stringify({
+                    'method': "fetch_messages",
+                    'room': roomName
+                }));
             }
-        };
+
+            chatSocket.onclose = function(e) {
+                console.error('Chat socket closed unexpectedly');
+            };
+
+            document.querySelector('#send-message-input').focus();
+            document.querySelector('#send-message-input').onkeyup = function(e) {
+                if (e.keyCode === 13) {  // enter, return
+                    document.querySelector('#submit-message-btn').click();
+                }
+            };
 
 
 
-        document.querySelector('#chat-message-submit').onclick = function(e) {
-            const messageInputDom = document.querySelector('#chat-message-input');
-            const message = messageInputDom.value;
-            chatSocket.send(JSON.stringify({
-                'message': message,
-                'method': "new_message",
-                'sender': messageSender,
-                'room': roomName
-            }));
-            messageInputDom.value = '';
-        };
-    </script>
-</body>
-</html>
+            document.querySelector('#submit-message-btn').onclick = function(e) {
+                const messageInputDom = document.querySelector('#send-message-input');
+                const message = messageInputDom.value;
+                chatSocket.send(JSON.stringify({
+                    'message': message,
+                    'method': "new_message",
+                    'sender': messageSender,
+                    'room': roomName
+                }));
+                messageInputDom.value = '';
+            };
+        </script>
+
+
+
+    </div>
+{% endblock %}
