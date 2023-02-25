@@ -79,10 +79,10 @@
                 buttonTwo.innerHTML = "Edit"
                 pTagBody.innerHTML = message['body'];
 
-                aTagEdit.appendChild(buttonTwo);
-                aTagDelete.appendChild(buttonOne);
-                pTag.appendChild(aTagEdit);
-                pTag.appendChild(aTagDelete);
+                {#aTagEdit.appendChild(buttonTwo);#}
+                {#aTagDelete.appendChild(buttonOne);#}
+                {#pTag.appendChild(aTagEdit);#}
+                {#pTag.appendChild(aTagDelete);#}
                 div.appendChild(pTag);
                 div.appendChild(pTagBody);
                 document.getElementById("messages").appendChild(div);

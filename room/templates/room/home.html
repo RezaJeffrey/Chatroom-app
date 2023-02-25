@@ -8,9 +8,9 @@
     <hr>
     {% for room in rooms %}
         {% if room.is_private  %}
-            <a href="{% url 'room:private_room_inside' room.id room.slug %}">{{ room.room_name }}(Private)</a><br><br>
+            <a href="{% url 'room:private_room_inside' room.room_name %}">{{ room.room_name }}(Private)</a><br><br>
         {% else %}
-            <a href="{% url 'room:room_inside' room.id room.slug %}">{{ room.room_name }}</a><br><br>
+            <a href="{% url 'room:room_inside' room.room_name %}">{{ room.room_name }}</a><br><br>
         {% endif %}
 
     {% endfor %}

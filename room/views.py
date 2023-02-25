@@ -78,14 +78,13 @@ class CreatePrivateRoomView(View):
             new.set_is_admin(True)
             new.save()
             messages.success(request, f"Room {cd['room_name']} created", 'success')
-            return redirect('room:room_inside', privateroom.id, privateroom.slug)
+            return redirect('room:room_inside', privateroom.room_name)
         messages.error(request, 'not valid', 'danger')
         return render(request, self.template_name, {'form': form})
 
 
 class RoomInsideView(View):
-    template_name = 'room/room_inside.html'
-    form_class = SendMessageForm
+    template_name = 'room/ws-room.html'
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
@@ -94,38 +93,25 @@ class RoomInsideView(View):
         return super().dispatch(request, *args, **kwargs)
 
     def setup(self, request, *args, **kwargs):
-        self.room = Room.objects.get(id=kwargs['room_id'])
+        self.room = Room.objects.get(room_name=kwargs['room_name'])
         self.all_messages = Message.objects.filter(room=self.room)
         return super().setup(request, *args, **kwargs)
 
-    def get(self, request, room_id, room_slug):
-        if request.user.room_set.filter(id=room_id).exists():
-            self.room = Room.objects.get(id=room_id)
-            form = self.form_class()
+    def get(self, request, room_name):
+        if request.user.room_set.filter(room_name=room_name).exists():
+            self.room = Room.objects.get(room_name=room_name)
             req_is_admin = request.user.membership_set.get(room=self.room).is_admin
             context = {
+                'username': request.user.username,
                 'room': self.room,
-                'form': form,
                 'message': self.all_messages,
+                'room_name': room_name,
                 'req_is_admin': req_is_admin,
             }
 
             return render(request, self.template_name, context)
         messages.error(request, 'Join the room first', 'warning')
-        return redirect('room:join_room', room_id)
-
-    def post(self, request, room_id, room_slug):
-        form = self.form_class(request.POST)
-        if form.is_valid():
-            print(self.room)
-            new_msg = Message(body=form.cleaned_data['body'])
-            new_msg.user = request.user
-            new_msg.room = self.room
-            new_msg.save()
-            return redirect('room:room_inside', room_id, room_slug)
-        else:
-            messages.error(request, 'form not valid', 'warning')
-        return render(request, self.template_name, {'form': form, 'message': self.all_messages})
+        return redirect('room:join_room', self.room.id)
 
 
 class JoinRoomView(LoginRequiredMixin, View):
@@ -150,19 +136,18 @@ class JoinRoomView(LoginRequiredMixin, View):
                 if check_password(cd['password'], self.new_room.password):
                     request.user.room_set.add(self.new_room)
                     messages.success(request, 'joined room', 'success')
-                    return redirect('room:room_inside', room_id, self.new_room.slug)
+                    return redirect('room:room_inside', self.new_room.room_name)
                 messages.error(request, 'wrong password', 'danger')
                 return redirect('room:join_room', room_id)
             messages.warning(request, 'form not valid', 'warning')
             return redirect('room:join_room', room_id)
         request.user.room_set.add(self.new_room)
         messages.success(request, "Joined ...", 'success')
-        return redirect('room:room_inside', room_id, self.new_room.slug)
+        return redirect('room:room_inside', self.new_room.room_name)
 
 
 class PrivateRoomInsideView(View):
-    template_name = 'room/room_inside.html'
-    form_class = SendMessageForm
+    template_name = 'room/ws-room.html'
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
@@ -171,38 +156,25 @@ class PrivateRoomInsideView(View):
         return super().dispatch(request, *args, **kwargs)
 
     def setup(self, request, *args, **kwargs):
-        self.room = Room.objects.get(id=kwargs['room_id'])
+        self.room = Room.objects.get(room_name=kwargs['room_name'])
         self.all_messages = Message.objects.filter(room=self.room)
         return super().setup(request, *args, **kwargs)
 
-    def get(self, request, room_id, room_slug):
-        if request.user.room_set.filter(id=room_id).exists():
-            self.room = Room.objects.get(id=room_id)
-            form = self.form_class()
+    def get(self, request, room_name):
+        if request.user.room_set.filter(room_name=room_name).exists():
+            self.room = Room.objects.get(room_name=room_name)
             req_is_admin = request.user.membership_set.get(room=self.room).is_admin
             context = {
+                'username': request.user.username,
                 'room': self.room,
-                'form': form,
                 'message': self.all_messages,
+                'room_name': room_name,
                 'req_is_admin': req_is_admin,
             }
 
             return render(request, self.template_name, context)
         messages.error(request, 'Join the room first', 'warning')
-        return redirect('room:join_room', room_id)
-
-    def post(self, request, room_id, room_slug):
-        form = self.form_class(request.POST)
-        if form.is_valid():
-            print(self.room)
-            new_msg = Message(body=form.cleaned_data['body'])
-            new_msg.user = request.user
-            new_msg.room = self.room
-            new_msg.save()
-            return redirect('room:room_inside', room_id, room_slug)
-        else:
-            messages.error(request, 'form not valid', 'warning')
-        return render(request, self.template_name, {'form': form, 'message': self.all_messages})
+        return redirect('room:join_room', self.room.id)
 
 
 class DeleteMessageView(LoginRequiredMixin, View):
@@ -225,7 +197,7 @@ class DeleteMessageView(LoginRequiredMixin, View):
 class EditMessageView(LoginRequiredMixin, View):
     form_class = SendMessageForm
 
-    def setup(self, request, *args, **kwargs):  # for performance. no need to query data base 3 times
+    def setup(self, request, *args, **kwargs):
         self.message_instance = Message.objects.get(id=kwargs['message_id'])
         return super().setup(request, *args, **kwargs)
 
