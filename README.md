@@ -1,9 +1,10 @@
 # Chatroom-app #Django
-Note: this project is being updated. Check feature/websockets branch in order to see the new changes.
+Note: this project is being updated so the clip showing below is a previouse version of the project. Check feature/websockets branch in order to see the new changes.
 
 
 Real-time chat app where you can create or enter a room and chat with others.
 user can create private or normal room . for private room you should add a password so each user who want to join the room should enter a password.
+
 using django channels and websockets makes it possible to display new messages without any need to reload.
 
 <div style="width:720px;max-width:100%;">
