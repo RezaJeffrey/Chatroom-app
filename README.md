@@ -1,5 +1,5 @@
 # Chatroom-app #Django
-Note: this project is being updated so the clip showing below is a previouse version of the project. Check feature/websockets branch in order to see the new changes.
+Note: this project is being updated so the clip showing below is a previous version of the project. Check feature/websockets branch in order to see the new changes.
 
 
 Real-time chat app where you can create or enter a room and chat with others.
