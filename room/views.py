@@ -92,26 +92,27 @@ class RoomInsideView(View):
             return redirect('account:signin')
         return super().dispatch(request, *args, **kwargs)
 
-    def setup(self, request, *args, **kwargs):
-        self.room = Room.objects.get(room_name=kwargs['room_name'])
-        self.all_messages = Message.objects.filter(room=self.room)
-        return super().setup(request, *args, **kwargs)
+    # def setup(self, request, *args, **kwargs):
+    #     self.room = Room.objects.get(room_name=kwargs['room_name'])
+    #     self.all_messages = Message.objects.filter(room=self.room)
+    #     return super().setup(request, *args, **kwargs)
 
     def get(self, request, room_name):
+        room = Room.objects.get(room_name=room_name)
         if request.user.room_set.filter(room_name=room_name).exists():
-            self.room = Room.objects.get(room_name=room_name)
-            req_is_admin = request.user.membership_set.get(room=self.room).is_admin
+            all_messages = Message.objects.filter(room=room)
+            req_is_admin = request.user.membership_set.get(room=room).is_admin
             context = {
                 'username': request.user.username,
-                'room': self.room,
-                'message': self.all_messages,
+                'room': room,
+                'message': all_messages,
                 'room_name': room_name,
                 'req_is_admin': req_is_admin,
             }
 
             return render(request, self.template_name, context)
         messages.error(request, 'Join the room first', 'warning')
-        return redirect('room:join_room', self.room.id)
+        return redirect('room:join_room', room.id)
 
 
 class JoinRoomView(LoginRequiredMixin, View):

@@ -1,9 +1,6 @@
 {% extends 'main.html' %}
 {% load static %}
 {% block body %}
-{#    <textarea id="chat-log" cols="100" rows="20"></textarea><br>#}
-{#    <input id="chat-message-input" type="text" size="100"><br>#}
-{#    <input id="chat-message-submit" type="button" value="Send">#}
     {{ room_name|json_script:"room-name" }}
     {{ username|json_script:"message-sender" }}
     <div id="room-div" class="alert alert-primary">
@@ -36,6 +33,7 @@
                 const data = JSON.parse(e.data);
                 if(data['method'] === 'fetch_messages')
                 {
+                    clearMessage()
                     for(let i=0; i<data['messages'].length; i++){
                         craeteMessage(data.messages[i]);
                     }
@@ -45,6 +43,11 @@
 
             };
 
+            function clearMessage()
+            {
+                const myDiv = document.getElementById("messages")
+                myDiv.innerHTML = ''
+            }
             function craeteMessage(message)
             {
                 var div= document.createElement("Div");
@@ -54,35 +57,47 @@
                 var pTagBody = document.createElement("P");
                 var aTagEdit = document.createElement("A");
                 var aTagDelete = document.createElement("A");
-                var buttonOne = document.createElement("Button");
-                var buttonTwo= document.createElement("Button");
+                var inputDelete = document.createElement("Input");
+                var buttonEdit= document.createElement("Button");
 
                 div.className = "card";
+                div.id = "Message"
                 if(messageSender === message['username'])
                 {
                     div.style.color = "crimson";
                 }
 
                 outerDiv.className = "alert alert-primary";
+                outerDiv.id = "all-messages";
                 pTag.className = "card-header";
                 pTag.style.whiteSpace = "pre";
                 pTag.innerHTML = message['username'] + "|" + message['posted_time'] + " ".repeat(18);
                 pTagBody.className = "card-body";
                 var msg_id = message['id'];
-                aTagDelete.href = "http://127.0.0.1:8000/delete_message/" + msg_id + "/"
-                aTagEdit.href = "http://127.0.0.1:8000/edit_message/" + msg_id + "/"
-                {#aTagDelete.href = "{% url 'room:delete_message' msg_id %}"#}
-                {#aTagEdit.href = "{% url 'room:edit_message' msg_id %}"#}
-                buttonOne.className = "btn btn-danger";
-                buttonOne.innerHTML = "Delete"
-                buttonTwo.className = "btn btn-success";
-                buttonTwo.innerHTML = "Edit"
+                {#aTagDelete.href = "http://127.0.0.1:8000/delete_message/" + msg_id + "/"#}
+                {#aTagEdit.href = "http://127.0.0.1:8000/edit_message/" + msg_id + "/"#}
+                // Delete button
+                inputDelete.className = "btn btn-danger";
+                inputDelete.value = "Delete"
+                inputDelete.type = "submit"
+                inputDelete.id = msg_id.toString()
+                inputDelete.onclick = function(e) {
+                    chatSocket.send(JSON.stringify({
+                        'message_id': msg_id,
+                        'method': "delete_message",
+                        'sender': messageSender,
+                        'room': roomName
+                }))}
+
+                // Edit button
+                buttonEdit.className = "btn btn-success";
+                buttonEdit.innerHTML = "Edit"
                 pTagBody.innerHTML = message['body'];
 
                 {#aTagEdit.appendChild(buttonTwo);#}
-                {#aTagDelete.appendChild(buttonOne);#}
+                aTagDelete.appendChild(inputDelete);
                 {#pTag.appendChild(aTagEdit);#}
-                {#pTag.appendChild(aTagDelete);#}
+                pTag.appendChild(aTagDelete);
                 div.appendChild(pTag);
                 div.appendChild(pTagBody);
                 document.getElementById("messages").appendChild(div);
@@ -108,8 +123,6 @@
                 }
             };
 
-
-
             document.querySelector('#submit-message-btn').onclick = function(e) {
                 const messageInputDom = document.querySelector('#send-message-input');
                 const message = messageInputDom.value;
@@ -121,6 +134,9 @@
                 }));
                 messageInputDom.value = '';
             };
+
+
+
         </script>
 
 

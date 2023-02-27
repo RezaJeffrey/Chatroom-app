@@ -30,9 +30,23 @@ class ChatConsumer(WebsocketConsumer):
         }
         self.send_chat_message(content)
 
+    def delete_message(self, data):
+        msg_id = int(data['message_id'])
+        username = data['sender']
+        message = Message.objects.filter(id=msg_id).first()
+        if message.user.username == username:
+            message.delete()
+
+        context = {
+            "method": "fetch_message",
+            'room': data['room']
+        }
+        self.fetch_messages(context)
+
     methods = {
         "fetch_messages": fetch_messages,
-        "new_message": new_message
+        "new_message": new_message,
+        "delete_message": delete_message
     }
 
     def messages_to_json(self, messages):
