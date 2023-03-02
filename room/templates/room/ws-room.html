@@ -28,17 +28,19 @@
             {
                 fetchMessages();
             }
-
             chatSocket.onmessage = function(e) {
                 const data = JSON.parse(e.data);
                 if(data['method'] === 'fetch_messages')
                 {
                     clearMessage()
-                    for(let i=0; i<data['messages'].length; i++){
+                    for(let i=0; i<data['messages'].length; i++) {
                         craeteMessage(data.messages[i]);
                     }
+
                 } else if (data['method'] === 'new_message') {
                     craeteMessage(data.message);
+                } else if (data['method'] === 'delete_message'){
+                    fetchMessages();
                 }
 
             };

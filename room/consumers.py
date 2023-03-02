@@ -17,6 +17,7 @@ class ChatConsumer(WebsocketConsumer):
             "method": "fetch_messages"
         }
         self.load_messages_to_group(context)
+        # self.fetch_messages_now(context)
 
     def new_message(self, data):
         user = data['sender']
@@ -36,12 +37,12 @@ class ChatConsumer(WebsocketConsumer):
         message = Message.objects.filter(id=msg_id).first()
         if message.user.username == username:
             message.delete()
-
+        messages = Message.objects.filter(room__room_name=data['room'])
         context = {
-            "method": "fetch_message",
-            'room': data['room']
+            "messages": self.messages_to_json(messages),
+            "method": "delete_message",
         }
-        self.fetch_messages(context)
+        self.fetch_messages_now(context)
 
     methods = {
         "fetch_messages": fetch_messages,
@@ -94,6 +95,15 @@ class ChatConsumer(WebsocketConsumer):
             }
         )
 
+    def fetch_messages_now(self, content):
+        # Send message to room group
+        async_to_sync(self.channel_layer.group_send)(
+            self.room_group_name, {
+                "type": "delete_chat_message",
+                "messages": content['messages'],
+                "method": content['method']
+            }
+        )
     def load_messages_to_group(self, messages):
         self.send(text_data=json.dumps(messages))
 
@@ -105,4 +115,15 @@ class ChatConsumer(WebsocketConsumer):
         # Send message to WebSocket
         self.send(text_data=json.dumps({
             "message": message,
-            "method": method}))
+            "method": method
+        }))
+
+    def delete_chat_message(self, event):
+        messages = event["messages"]
+        method = event["method"]
+
+        # Send message to WebSocket
+        self.send(text_data=json.dumps({
+            "messages": messages,
+            "method": method
+        }))
