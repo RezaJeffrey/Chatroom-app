@@ -1,29 +1,17 @@
 # Chatroom-app #Django
-Note: Project updated with django channels so users can experience realtime chatting.
+Note: Project updated with django channels, so users can experience realtime chatting.
 
 Real-time chat app where you can create or enter a room and chat with others.
 user can create private or normal room . for private room you should add a password so each user who want to join the room should enter a password.
 
 using django channels and websockets makes it possible to display new messages without any need to reload.
 
-
-Note: this project is being updated. Check feature/websockets branch in order to see the new changes.
-
-simple chatroom where you can create or enter a room and chat with others .
-user can create private or normal room . for private room you should add a password so each user who want to join the room should enter a password.
-
-
 <div style="width:720px;max-width:100%;">
   <p><img align="left" alt="gif" src="https://github.com/RezaJeffrey/Chatroom-app/blob/master/ezgif.com-gif-maker%20(1).gif" width="560" height="360"  frameBorder="0" /></p>
   </div>
   
 
-
 I've been working on back-end of the project so didn't pay attention to the front end and I'm using Bootstrap for the front side.
-=======
-I use Django for this project without using websockets .
-I've been working on back-end of the project so I didn't pay attention to the front end and I'm using Bootstrap for the front side.
-
 
 to run the project first fork it and in the terminal cd into root directory were manage.py file is. 
 then run :
